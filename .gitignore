@@ -1,0 +1,23 @@
+# Service data (volumes)
+config/
+
+# Secrets
+.env
+*.key
+*.pem
+*.crt
+
+# Go build artifacts
+dashboard/arcticmon
+dashboard/tmp/
+
+# Editor
+*~
+*.swp
+*.swo
+.vscode/
+.idea/
+
+# OS
+.DS_Store
+Thumbs.db

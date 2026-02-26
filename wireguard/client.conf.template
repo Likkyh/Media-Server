@@ -1,0 +1,11 @@
+[Interface]
+PrivateKey = CLIENT_PRIVATE_KEY_HERE
+Address = 10.0.0.2/24
+DNS = 1.1.1.1
+
+[Peer]
+PublicKey = SERVER_PUBLIC_KEY_HERE
+Endpoint = YOUR_PUBLIC_IP:51820
+# Access to VPN network + local network
+AllowedIPs = 10.0.0.0/24, 192.168.1.0/24
+PersistentKeepalive = 25

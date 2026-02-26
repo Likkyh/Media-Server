@@ -1,0 +1,379 @@
+# NOTE: All images use :latest tags. For production stability, pin to specific
+# versions (e.g., qmcgaw/gluetun:v3.39.1) once your stack is working.
+
+networks:
+  medianet:
+    driver: bridge
+
+services:
+  # ========== VPN ==========
+  gluetun:
+    image: qmcgaw/gluetun:latest
+    container_name: gluetun
+    cap_add: [ NET_ADMIN ]
+    devices: [ /dev/net/tun:/dev/net/tun ]
+    ports:
+      - "6881:6881"     # qBittorrent TCP
+      - "6881:6881/udp" # qBittorrent UDP
+      # 8080 (qBittorrent WebUI) and 8191 (FlareSolverr) removed — accessible via NPM only
+    environment:
+      - VPN_SERVICE_PROVIDER=protonvpn
+      - VPN_TYPE=wireguard
+      - WIREGUARD_PRIVATE_KEY=${WIREGUARD_PRIVATE_KEY}
+      - SERVER_COUNTRIES=Netherlands
+      - VPN_PORT_FORWARDING=on
+      - VPN_PORT_FORWARDING_UP_COMMAND=/bin/sh -c 'wget -O- --retry-connrefused --post-data "json={\"listen_port\":{{PORT}},\"random_port\":false,\"upnp\":false}" http://127.0.0.1:8080/api/v2/app/setPreferences 2>&1'
+      - VPN_PORT_FORWARDING_DOWN_COMMAND=/bin/sh -c 'wget -O- --retry-connrefused --post-data "json={\"listen_port\":0}" http://127.0.0.1:8080/api/v2/app/setPreferences 2>&1'
+      # Removed 8080 — exposing qBittorrent WebUI to inbound VPN traffic is a security risk.
+      # 8191 kept if FlareSolverr must be reachable via the VPN tunnel; remove if not needed.
+      - FIREWALL_VPN_INPUT_PORTS=8191
+      - FIREWALL_OUTBOUND_SUBNETS=192.168.1.0/24,172.16.0.0/12
+    volumes:
+      - ./config/gluetun:/gluetun
+    networks:
+      - medianet
+    healthcheck:
+      test: [ "CMD", "/gluetun-entrypoint", "healthcheck" ]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 30s
+    labels:
+      - autoheal.enable=true
+    restart: unless-stopped
+
+  qbittorrent:
+    image: lscr.io/linuxserver/qbittorrent:latest
+    container_name: qbittorrent
+    network_mode: "service:gluetun"
+    environment:
+      - PUID=1000
+      - PGID=1000
+      - TZ=Europe/Paris
+      - WEBUI_PORT=8080
+    volumes:
+      - ./config/qbittorrent:/config
+      - /mnt/media:/data
+    depends_on:
+      gluetun:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/"]
+      interval: 1m
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+    labels:
+      - autoheal.enable=true
+    restart: unless-stopped
+
+  sabnzbd:
+    image: lscr.io/linuxserver/sabnzbd:latest
+    container_name: sabnzbd
+    environment:
+      - PUID=1000
+      - PGID=1000
+      - TZ=Europe/Paris
+    volumes:
+      - ./config/sabnzbd:/config
+      - /mnt/media:/data
+    ports:
+      - "8085:8080"
+    networks:
+      - medianet
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/"]
+      interval: 1m
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+    labels:
+      - autoheal.enable=true
+    restart: unless-stopped
+
+  # ========== ARR SUITE ==========
+  prowlarr:
+    image: lscr.io/linuxserver/prowlarr:latest
+    container_name: prowlarr
+    environment:
+      - PUID=1000
+      - PGID=1000
+      - TZ=Europe/Paris
+    volumes:
+      - ./config/prowlarr:/config
+    ports:
+      - "9696:9696"
+    networks:
+      - medianet
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9696/ping"]
+      interval: 1m
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+    labels:
+      - autoheal.enable=true
+    restart: unless-stopped
+
+  # FlareSolverr via VPN to bypass Cloudflare on blocked sites
+  flaresolverr:
+    image: ghcr.io/flaresolverr/flaresolverr:latest
+    container_name: flaresolverr
+    network_mode: "service:gluetun"
+    environment:
+      - LOG_LEVEL=info
+      - LOG_HTML=false
+      - TZ=Europe/Paris
+    depends_on:
+      gluetun:
+        condition: service_healthy
+    healthcheck:
+      # Use wget — curl is not available in the FlareSolverr image
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:8191/"]
+      interval: 1m
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+    labels:
+      - autoheal.enable=true
+    restart: unless-stopped
+
+  radarr:
+    image: lscr.io/linuxserver/radarr:latest
+    container_name: radarr
+    environment:
+      - PUID=1000
+      - PGID=1000
+      - TZ=Europe/Paris
+    volumes:
+      - ./config/radarr:/config
+      - /mnt/media:/data
+    ports:
+      - "7878:7878"
+    networks:
+      - medianet
+    depends_on:
+      prowlarr:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:7878/ping"]
+      interval: 1m
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+    labels:
+      - autoheal.enable=true
+    restart: unless-stopped
+
+  sonarr:
+    image: lscr.io/linuxserver/sonarr:latest
+    container_name: sonarr
+    environment:
+      - PUID=1000
+      - PGID=1000
+      - TZ=Europe/Paris
+    volumes:
+      - ./config/sonarr:/config
+      - /mnt/media:/data
+    ports:
+      - "8989:8989"
+    networks:
+      - medianet
+    depends_on:
+      prowlarr:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8989/ping"]
+      interval: 1m
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+    labels:
+      - autoheal.enable=true
+    restart: unless-stopped
+
+  bazarr:
+    image: lscr.io/linuxserver/bazarr:latest
+    container_name: bazarr
+    environment:
+      - PUID=1000
+      - PGID=1000
+      - TZ=Europe/Paris
+    volumes:
+      - ./config/bazarr:/config
+      - /mnt/media:/data
+    ports:
+      - "6767:6767"
+    networks:
+      - medianet
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:6767/"]
+      interval: 1m
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+    labels:
+      - autoheal.enable=true
+    restart: unless-stopped
+
+  # ========== STREAMING ==========
+  jellyfin:
+    image: lscr.io/linuxserver/jellyfin:latest
+    container_name: jellyfin
+    environment:
+      - PUID=1000
+      - PGID=1000
+      - TZ=Europe/Paris
+    volumes:
+      - ./config/jellyfin:/config
+      - /mnt/media:/data
+    ports:
+      - "8096:8096"
+    networks:
+      - medianet
+    # runtime: nvidia is redundant when using the deploy.resources block below
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: [ gpu ]
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8096/health"]
+      interval: 1m
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+    labels:
+      - autoheal.enable=true
+    restart: unless-stopped
+
+  seerr:
+    image: ghcr.io/seerr-team/seerr:latest
+    container_name: seerr
+    init: true
+    environment:
+      - TZ=Europe/Paris
+    volumes:
+      - ./config/jellyseerr:/app/config
+    ports:
+      - "5055:5055"
+    networks:
+      - medianet
+    depends_on:
+      jellyfin:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:5055/"]
+      interval: 1m
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+    labels:
+      - autoheal.enable=true
+    restart: unless-stopped
+
+  # ========== UNMANIC (Automatic transcoding) ==========
+  unmanic:
+    image: josh5/unmanic:latest
+    container_name: unmanic
+    environment:
+      - PUID=1000
+      - PGID=1000
+      - TZ=Europe/Paris
+      # NVIDIA_VISIBLE_DEVICES is redundant — GPU is already declared via deploy.resources below
+    volumes:
+      - ./config/unmanic:/config
+      - /mnt/media:/data
+    ports:
+      - "8888:8888"
+    networks:
+      - medianet
+    # runtime: nvidia is redundant when using the deploy.resources block below
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: [ gpu ]
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8888/"]
+      interval: 1m
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+    labels:
+      - autoheal.enable=true
+    restart: unless-stopped
+
+  # ========== REVERSE PROXY ==========
+  nginx-proxy-manager:
+    image: jc21/nginx-proxy-manager:latest
+    container_name: npm
+    ports:
+      - "80:80"
+      - "443:443"
+      - "81:81"
+    volumes:
+      - ./config/npm/data:/data
+      - ./config/npm/letsencrypt:/etc/letsencrypt
+    networks:
+      - medianet
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:81/"]
+      interval: 1m
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+    labels:
+      - autoheal.enable=true
+    restart: unless-stopped
+
+  # ========== DASHBOARD ==========
+  arcticmon:
+    build: ./dashboard
+    container_name: arcticmon
+    privileged: true
+    pid: host
+    environment:
+      - TZ=Europe/Paris
+      - JELLYFIN_API_KEY=${JELLYFIN_API_KEY}
+      - SEERR_API_KEY=${SEERR_API_KEY}
+      - RADARR_API_KEY=${RADARR_API_KEY}
+      - SONARR_API_KEY=${SONARR_API_KEY}
+      - PROWLARR_API_KEY=${PROWLARR_API_KEY}
+      - BAZARR_API_KEY=${BAZARR_API_KEY}
+      - QBIT_USERNAME=${QBIT_USERNAME}
+      - QBIT_PASSWORD=${QBIT_PASSWORD}
+      - SABNZBD_API_KEY=${SABNZBD_API_KEY}
+      - DASHBOARD_USER=${DASHBOARD_USER}
+      - DASHBOARD_PASS=${DASHBOARD_PASS}
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - /proc:/host/proc:ro
+      - /run/utmp:/host/run/utmp:ro
+      - /var/log:/host/log:ro
+    networks:
+      - medianet
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3000/healthz"]
+      interval: 1m
+      timeout: 10s
+      retries: 3
+      start_period: 15s
+    labels:
+      - autoheal.enable=true
+    restart: unless-stopped
+
+  # ========== AUTOHEAL ==========
+  autoheal:
+    image: willfarrell/autoheal:latest
+    container_name: autoheal
+    environment:
+      # Only restarts containers explicitly labeled with autoheal.enable=true
+      - AUTOHEAL_CONTAINER_LABEL=autoheal.enable
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+    restart: unless-stopped
