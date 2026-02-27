@@ -31,12 +31,13 @@ var (
 
 // SSHSecurityCollector parses auth.log for SSH authentication events.
 type SSHSecurityCollector struct {
-	cfg   *config.Config
-	store *store.Store
+	cfg    *config.Config
+	store  *store.Store
+	lookup *PiholeLookup
 }
 
-func NewSSHSecurityCollector(cfg *config.Config, s *store.Store) *SSHSecurityCollector {
-	return &SSHSecurityCollector{cfg: cfg, store: s}
+func NewSSHSecurityCollector(cfg *config.Config, s *store.Store, lookup *PiholeLookup) *SSHSecurityCollector {
+	return &SSHSecurityCollector{cfg: cfg, store: s, lookup: lookup}
 }
 
 func (c *SSHSecurityCollector) Name() string { return "ssh-security" }
@@ -208,6 +209,7 @@ func (c *SSHSecurityCollector) Collect(ctx context.Context) error {
 	for ip, tr := range failedByIP {
 		offenders = append(offenders, models.SSHOffender{
 			IP:       ip,
+			Hostname: c.lookup.Lookup(ip),
 			Attempts: tr.count,
 			LastSeen: tr.lastSeen.Format(time.RFC3339),
 		})
@@ -220,8 +222,8 @@ func (c *SSHSecurityCollector) Collect(ctx context.Context) error {
 	}
 
 	// Convert to API events (most recent first, keep last 20)
-	recentFailed := toAuthEvents(allFailed, 20)
-	recentAccepted := toAuthEvents(allAccepted, 20)
+	recentFailed := c.toAuthEvents(allFailed, 20)
+	recentAccepted := c.toAuthEvents(allAccepted, 20)
 
 	data := models.SSHSecurityData{
 		Failed24h:      failed24h,
@@ -239,7 +241,7 @@ func (c *SSHSecurityCollector) Collect(ctx context.Context) error {
 	return nil
 }
 
-func toAuthEvents(events []sshEvent, limit int) []models.SSHAuthEvent {
+func (c *SSHSecurityCollector) toAuthEvents(events []sshEvent, limit int) []models.SSHAuthEvent {
 	// Sort by time descending (most recent first)
 	sort.Slice(events, func(i, j int) bool {
 		return events[i].t.After(events[j].t)
@@ -250,11 +252,12 @@ func toAuthEvents(events []sshEvent, limit int) []models.SSHAuthEvent {
 	result := make([]models.SSHAuthEvent, len(events))
 	for i, e := range events {
 		result[i] = models.SSHAuthEvent{
-			Time:    e.t.Format(time.RFC3339),
-			User:    e.user,
-			IP:      e.ip,
-			Method:  e.method,
-			Success: e.success,
+			Time:     e.t.Format(time.RFC3339),
+			User:     e.user,
+			IP:       e.ip,
+			Hostname: c.lookup.Lookup(e.ip),
+			Method:   e.method,
+			Success:  e.success,
 		}
 	}
 	return result

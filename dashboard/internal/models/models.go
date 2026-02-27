@@ -171,6 +171,7 @@ type SSHSecurityData struct {
 // SSHOffender is an IP with its failed attempt count.
 type SSHOffender struct {
 	IP       string `json:"ip"`
+	Hostname string `json:"hostname,omitempty"`
 	Attempts int    `json:"attempts"`
 	LastSeen string `json:"lastSeen"`
 	Country  string `json:"country,omitempty"`
@@ -181,6 +182,7 @@ type SSHAuthEvent struct {
 	Time     string `json:"time"`
 	User     string `json:"user"`
 	IP       string `json:"ip"`
+	Hostname string `json:"hostname,omitempty"`
 	Method   string `json:"method"`
 	Success  bool   `json:"success"`
 }
