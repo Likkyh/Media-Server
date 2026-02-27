@@ -106,10 +106,12 @@ function renderServices(services) {
         return;
     }
 
+    const healthLabels = {healthy: 'Healthy', unhealthy: 'Unhealthy', starting: 'Starting', running: 'Running', stopped: 'Stopped', none: 'No check'};
     grid.innerHTML = services.map(svc => {
         const tag = svc.externalUrl ? 'a' : 'div';
         const href = svc.externalUrl ? ` href="${esc(svc.externalUrl)}" target="_blank" rel="noopener"` : '';
         const healthClass = svc.health || 'stopped';
+        const healthLabel = healthLabels[healthClass] || healthLabels.none;
         const icon = getSvcIcon(svc.name);
         const linkIcon = svc.externalUrl ? '<svg class="link-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>' : '';
         return `<${tag} class="service-card"${href}>
@@ -117,7 +119,7 @@ function renderServices(services) {
             ${icon}
             <div class="service-info">
                 <div class="service-name">${esc(svc.name)}${linkIcon}</div>
-                <div class="service-meta">${esc(svc.image)} \u00B7 ${esc(svc.uptime)}</div>
+                <div class="service-meta"><span class="service-health-text ${healthClass}">${healthLabel}</span> \u00B7 ${esc(svc.uptime)}</div>
             </div>
         </${tag}>`;
     }).join('');
@@ -168,7 +170,7 @@ function renderTorrents(torrents) {
         return;
     }
 
-    list.innerHTML = torrents.topTorrents.map(t => `
+    list.innerHTML = torrents.topTorrents.slice(0, 5).map(t => `
         <div class="torrent-item">
             <span class="torrent-item-name" title="${esc(t.name)}">${esc(truncate(t.name, 50))}</span>
             <span class="torrent-item-stats">
@@ -187,7 +189,7 @@ function renderDownloads(downloads) {
         return;
     }
 
-    list.innerHTML = downloads.map(d => `
+    list.innerHTML = downloads.slice(0, 5).map(d => `
         <div class="download-item">
             <span class="download-item-name" title="${esc(d.title)}">
                 <span class="status-badge ${d.source.toLowerCase()}">${esc(d.source)}</span>

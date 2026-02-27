@@ -1,7 +1,7 @@
 /* Arctic Monitor - Deep Blue Chrome Theme */
 :root {
     --bg-deep: #060a18;
-    --bg-card: #0c1228;
+    --bg-card: #0e1530;
     --bg-card-hover: #111a38;
     --border-frost: rgba(37, 99, 235, 0.2);
     --border-frost-hover: rgba(37, 99, 235, 0.4);
@@ -9,14 +9,14 @@
     --accent-light: #3b82f6;
     --accent-bright: #60a5fa;
     --accent-dim: rgba(37, 99, 235, 0.12);
-    --text-primary: #e8ecf4;
-    --text-secondary: #a0aec0;
-    --text-muted: #5a6a82;
+    --text-primary: #f1f5f9;
+    --text-secondary: #b8c5d6;
+    --text-muted: #7a8a9e;
     --green: #34d399;
     --amber: #fbbf24;
     --red: #f87171;
     --pink: #ec4899;
-    --pink-dim: rgba(236, 72, 153, 0.15);
+    --pink-dim: rgba(236, 72, 153, 0.08);
     --pink-glow: rgba(236, 72, 153, 0.25);
     --chrome: #c8d0dc;
     --radius: 12px;
@@ -118,7 +118,7 @@ a.service-card:hover .link-icon {
 }
 
 .header h1 {
-    font-size: 16px;
+    font-size: 18px;
     font-weight: 700;
     letter-spacing: 3px;
     color: var(--chrome);
@@ -191,7 +191,7 @@ a.service-card:hover .link-icon {
 .card-half { grid-column: span 2; }
 
 .card-title {
-    font-size: 14px;
+    font-size: 15px;
     text-transform: uppercase;
     letter-spacing: 2.5px;
     color: var(--chrome);
@@ -257,7 +257,7 @@ a.service-card:hover .link-icon {
 .cpu-core-id {
     position: relative;
     z-index: 1;
-    font-size: 10px;
+    font-size: 11px;
     font-weight: 600;
     color: var(--text-muted);
     margin-left: 6px;
@@ -268,7 +268,7 @@ a.service-card:hover .link-icon {
     position: absolute;
     right: 6px;
     z-index: 1;
-    font-size: 11px;
+    font-size: 12px;
     font-weight: 600;
     color: var(--text-primary);
     text-shadow: 0 1px 2px rgba(0,0,0,0.5);
@@ -285,7 +285,7 @@ a.service-card:hover .link-icon {
 .metric-header {
     display: flex;
     justify-content: space-between;
-    font-size: 12px;
+    font-size: 13px;
     margin-bottom: 6px;
     color: var(--text-secondary);
 }
@@ -364,7 +364,7 @@ a.service-card:hover .link-icon {
 }
 
 .info-chip {
-    font-size: 11px;
+    font-size: 12px;
     color: var(--text-secondary);
     background: rgba(37, 99, 235, 0.06);
     padding: 4px 10px;
@@ -445,7 +445,7 @@ a.service-card:hover {
 }
 
 .service-name {
-    font-size: 12px;
+    font-size: 13px;
     font-weight: 600;
     color: var(--text-primary);
     white-space: nowrap;
@@ -454,7 +454,7 @@ a.service-card:hover {
 }
 
 .service-meta {
-    font-size: 10px;
+    font-size: 11px;
     color: var(--text-muted);
     white-space: nowrap;
     overflow: hidden;
@@ -469,7 +469,7 @@ a.service-card:hover {
 .streams-table {
     width: 100%;
     border-collapse: collapse;
-    font-size: 12px;
+    font-size: 13px;
 }
 
 .streams-table th {
@@ -477,7 +477,7 @@ a.service-card:hover {
     padding: 8px 12px;
     color: var(--text-muted);
     font-weight: 600;
-    font-size: 10px;
+    font-size: 11px;
     text-transform: uppercase;
     letter-spacing: 1px;
     border-bottom: 1px solid rgba(37, 99, 235, 0.12);
@@ -530,7 +530,7 @@ a.service-card:hover {
     padding: 6px 10px;
     background: rgba(37, 99, 235, 0.04);
     border-radius: 4px;
-    font-size: 12px;
+    font-size: 13px;
 }
 
 .stat-label {
@@ -555,7 +555,7 @@ a.service-card:hover {
     padding: 8px 10px;
     background: rgba(37, 99, 235, 0.04);
     border-radius: 4px;
-    font-size: 11px;
+    font-size: 13px;
     gap: 8px;
 }
 
@@ -594,7 +594,7 @@ a.service-card:hover {
 
 /* Request status badges */
 .status-badge {
-    font-size: 10px;
+    font-size: 11px;
     padding: 2px 8px;
     border-radius: 3px;
     font-weight: 600;
@@ -628,7 +628,7 @@ a.service-card:hover {
 .worker-header {
     display: flex;
     justify-content: space-between;
-    font-size: 11px;
+    font-size: 13px;
     margin-bottom: 6px;
 }
 
@@ -655,7 +655,7 @@ a.service-card:hover {
     padding: 10px 12px;
     background: rgba(37, 99, 235, 0.04);
     border-radius: 4px;
-    font-size: 12px;
+    font-size: 13px;
     border-left: 3px solid var(--amber);
 }
 
@@ -677,7 +677,7 @@ a.service-card:hover {
 /* Empty state */
 .empty-state {
     color: var(--text-muted);
-    font-size: 12px;
+    font-size: 13px;
     text-align: center;
     padding: 20px;
     font-style: italic;
@@ -845,7 +845,7 @@ a.service-card:hover {
 }
 
 .library-stat-label {
-    font-size: 10px;
+    font-size: 11px;
     text-transform: uppercase;
     letter-spacing: 1.5px;
     color: var(--text-muted);
@@ -929,7 +929,7 @@ a.service-card:hover {
 
 .period-btn {
     font-family: inherit;
-    font-size: 10px;
+    font-size: 11px;
     font-weight: 600;
     padding: 3px 10px;
     border: 1px solid rgba(37, 99, 235, 0.15);
@@ -1003,7 +1003,7 @@ a.service-card:hover {
 .ssh-stat-ips .ssh-stat-value { color: var(--amber); }
 
 .ssh-stat-label {
-    font-size: 10px;
+    font-size: 11px;
     text-transform: uppercase;
     letter-spacing: 1.5px;
     color: var(--text-muted);
@@ -1017,7 +1017,7 @@ a.service-card:hover {
 }
 
 .ssh-col-title {
-    font-size: 11px;
+    font-size: 12px;
     font-weight: 600;
     text-transform: uppercase;
     letter-spacing: 1px;
@@ -1041,7 +1041,7 @@ a.service-card:hover {
     align-items: center;
     padding: 6px 10px;
     border-radius: 4px;
-    font-size: 11px;
+    font-size: 13px;
     gap: 8px;
 }
 
@@ -1103,6 +1103,14 @@ a.service-card:hover {
     background: rgba(37, 99, 235, 0.08);
     color: var(--text-muted);
 }
+
+/* Service health text labels */
+.service-health-text { font-weight: 600; }
+.service-health-text.healthy { color: var(--green); }
+.service-health-text.unhealthy { color: var(--red); }
+.service-health-text.starting { color: var(--amber); }
+.service-health-text.running { color: var(--accent-light); }
+.service-health-text.stopped { color: var(--text-muted); }
 
 /* Scrollbar */
 ::-webkit-scrollbar {

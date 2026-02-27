@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"log"
 	"net/http"
 	"time"
 
@@ -58,13 +59,12 @@ func (s *SeerrCollector) Collect(ctx context.Context) error {
 			CreatedAt string `json:"createdAt"`
 			Media     struct {
 				MediaType string `json:"mediaType"`
+				TmdbId    int    `json:"tmdbId"`
 			} `json:"media"`
 			RequestedBy struct {
 				DisplayName string `json:"displayName"`
 				Username    string `json:"username"`
 			} `json:"requestedBy"`
-			// For movies/tv, the title might be in the media info
-			// We need to get it from the embedded media details
 		} `json:"results"`
 	}
 	if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
@@ -97,8 +97,13 @@ func (s *SeerrCollector) Collect(ctx context.Context) error {
 
 		createdAt, _ := time.Parse(time.RFC3339, r.CreatedAt)
 
+		title := s.fetchMediaTitle(ctx, mediaType, r.Media.TmdbId)
+		if title == "" {
+			title = fmt.Sprintf("%s request", mediaType)
+		}
+
 		requests = append(requests, models.MediaRequest{
-			Title:       fmt.Sprintf("%s request", mediaType),
+			Title:       title,
 			Type:        mediaType,
 			Status:      status,
 			User:        user,
@@ -108,4 +113,54 @@ func (s *SeerrCollector) Collect(ctx context.Context) error {
 
 	s.store.UpdateRequests(requests)
 	return nil
+}
+
+// fetchMediaTitle resolves the title for a media item via the Seerr API.
+func (s *SeerrCollector) fetchMediaTitle(ctx context.Context, mediaType string, tmdbId int) string {
+	if tmdbId == 0 {
+		return ""
+	}
+
+	url := fmt.Sprintf("%s/api/v1/%s/%d", s.cfg.SeerrURL, mediaType, tmdbId)
+	req, err := http.NewRequestWithContext(ctx, "GET", url, nil)
+	if err != nil {
+		return ""
+	}
+	req.Header.Set("X-Api-Key", s.cfg.SeerrAPIKey)
+
+	resp, err := s.client.Do(req)
+	if err != nil {
+		log.Printf("[seerr] failed to fetch title for %s/%d: %v", mediaType, tmdbId, err)
+		return ""
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != 200 {
+		return ""
+	}
+
+	var media struct {
+		Title         string `json:"title"`
+		Name          string `json:"name"`
+		OriginalTitle string `json:"originalTitle"`
+		OriginalName  string `json:"originalName"`
+	}
+	if err := json.NewDecoder(resp.Body).Decode(&media); err != nil {
+		return ""
+	}
+
+	// Movies use title/originalTitle, TV uses name/originalName
+	if media.Title != "" {
+		return media.Title
+	}
+	if media.Name != "" {
+		return media.Name
+	}
+	if media.OriginalTitle != "" {
+		return media.OriginalTitle
+	}
+	if media.OriginalName != "" {
+		return media.OriginalName
+	}
+	return ""
 }
