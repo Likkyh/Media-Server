@@ -2,10 +2,10 @@
 FROM golang:1.22-alpine AS builder
 RUN apk add --no-cache git
 WORKDIR /src
-COPY go.mod ./
+COPY go.mod go.sum* ./
 RUN go mod download
 COPY . .
-RUN CGO_ENABLED=0 GOOS=linux go build -ldflags="-s -w" -o /arcticmon .
+RUN go mod tidy && CGO_ENABLED=0 GOOS=linux go build -ldflags="-s -w" -o /arcticmon .
 
 # Stage 2: Runtime
 FROM alpine:3.19
