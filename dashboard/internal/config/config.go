@@ -38,6 +38,9 @@ type Config struct {
 
 	DashboardUser string
 	DashboardPass string
+
+	PiholeURL      string
+	PiholePassword string
 }
 
 func Load() *Config {
@@ -77,6 +80,9 @@ func Load() *Config {
 
 		DashboardUser: os.Getenv("DASHBOARD_USER"),
 		DashboardPass: os.Getenv("DASHBOARD_PASS"),
+
+		PiholeURL:      envOr("PIHOLE_URL", "http://192.168.1.254"),
+		PiholePassword: os.Getenv("PIHOLE_PASSWORD"),
 	}
 }
 

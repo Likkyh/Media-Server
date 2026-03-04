@@ -291,7 +291,7 @@ function renderSSHSecurity(data) {
     } else {
         offList.innerHTML = data.topOffenders.map(o =>
             `<div class="ssh-entry ssh-entry-offender">
-                <span class="ssh-entry-ip">${esc(o.ip)}</span>
+                <span class="ssh-entry-ip">${o.hostname ? `${esc(o.hostname)} (${esc(o.ip)})` : esc(o.ip)}</span>
                 <span class="ssh-entry-meta">
                     <span class="ssh-entry-time">${timeAgo(o.lastSeen)}</span>
                     <span class="ssh-entry-count">${o.attempts}</span>
@@ -308,7 +308,7 @@ function renderSSHSecurity(data) {
         failList.innerHTML = data.recentFailed.map(e =>
             `<div class="ssh-entry ssh-entry-fail">
                 <span class="ssh-entry-user">${esc(e.user)}</span>
-                <span class="ssh-entry-ip">${esc(e.ip)}</span>
+                <span class="ssh-entry-ip">${e.hostname ? `${esc(e.hostname)} (${esc(e.ip)})` : esc(e.ip)}</span>
                 <span class="ssh-entry-meta">
                     <span class="ssh-entry-method">${esc(e.method)}</span>
                     <span class="ssh-entry-time">${timeAgo(e.time)}</span>
@@ -325,7 +325,7 @@ function renderSSHSecurity(data) {
         okList.innerHTML = data.recentAccepted.map(e =>
             `<div class="ssh-entry ssh-entry-ok">
                 <span class="ssh-entry-user">${esc(e.user)}</span>
-                <span class="ssh-entry-ip">${esc(e.ip)}</span>
+                <span class="ssh-entry-ip">${e.hostname ? `${esc(e.hostname)} (${esc(e.ip)})` : esc(e.ip)}</span>
                 <span class="ssh-entry-meta">
                     <span class="ssh-entry-method">${esc(e.method)}</span>
                     <span class="ssh-entry-time">${timeAgo(e.time)}</span>

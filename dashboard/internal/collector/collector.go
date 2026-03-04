@@ -49,7 +49,8 @@ func (o *Orchestrator) Start(ctx context.Context) {
 	o.run(ctx, NewJellyfinLibraryCollector(o.cfg, o.store), slow)
 	o.run(ctx, NewProwlarrCollector(o.cfg, o.store), slow)
 	o.run(ctx, NewBazarrCollector(o.cfg, o.store), slow)
-	o.run(ctx, NewSSHSecurityCollector(o.cfg, o.store), slow)
+	piholeLookup := NewPiholeLookup(o.cfg)
+	o.run(ctx, NewSSHSecurityCollector(o.cfg, o.store, piholeLookup), slow)
 }
 
 // run starts a goroutine that calls the collector on a ticker.
